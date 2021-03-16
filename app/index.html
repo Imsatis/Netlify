@@ -1,36 +1,3 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>Hellow World from GitHubForm Testing...</h1>
-
-    <form name="contact" method="POST" data-netlify="true">
-        <p>
-          <label>Your Name: <input type="text" name="name" /></label>   
-        </p>
-        <p>
-          <label>Your Email: <input type="email" name="email" /></label>
-        </p>
-        <p>
-          <label>Your Role: <select name="role[]" multiple>
-            <option value="leader">Leader</option>
-            <option value="follower">Follower</option>
-          </select></label>
-        </p>
-        <p>
-          <label>Message: <textarea name="message"></textarea></label>
-        </p>
-        <p>
-          <button type="submit">Send</button>
-        </p>
-      </form>
-</body>
-</html> -->
-
 
 <!doctype html>
 <html lang="en">
@@ -197,11 +164,11 @@ function onBuyClicked() {
   };
 
   const options = {
-    requestShipping: true,
-    requestPayerName: true,
-    requestPayerPhone: true,
-    requestPayerEmail: true,
-    shippingType: 'shipping',
+    // requestShipping: true,
+    // requestPayerName: true,
+    // requestPayerPhone: true,
+    // requestPayerEmail: true,
+    // shippingType: 'shipping',
   };
 
   let request = null;
@@ -311,32 +278,32 @@ function checkCanMakePayment(request) {
  * @param {Promise} canMakePayment The promise for whether can make payment.
  */
 function showPaymentUI(request, canMakePayment) {
-  // Redirect to play store if can't make payment.
-  if (!canMakePayment) {
-    redirectToPlayStore();
-    return;
-  }
+ if (!canMakePayment) {
+   handleNotReadyToPay();
+   return;
+ }
 
-  // Set payment timeout.
-  let paymentTimeout = window.setTimeout(function() {
-    window.clearTimeout(paymentTimeout);
-    request.abort()
-        .then(function() {
-          console.log('Payment timed out after 20 minutes.');
-        })
-        .catch(function() {
-          console.log('Unable to abort, user is in the process of paying.');
-        });
-  }, 20 * 60 * 1000); /* 20 minutes */
+ // Set payment timeout.
+ let paymentTimeout = window.setTimeout(function() {
+   window.clearTimeout(paymentTimeout);
+   request.abort()
+       .then(function() {
+         console.log('Payment timed out after 20 minutes.');
+       })
+       .catch(function() {
+         console.log('Unable to abort, user is in the process of paying.');
+       });
+ }, 20 * 60 * 1000); /* 20 minutes */
 
-  request.show()
-      .then(function(instrument) {
-        window.clearTimeout(paymentTimeout);
-        processResponse(instrument);  // Handle response from browser.
-      })
-      .catch(function(err) {
-        console.log(err);
-      });
+ request.show()
+     .then(function(instrument) {
+
+       window.clearTimeout(paymentTimeout);
+       processResponse(instrument); // Handle response from browser.
+     })
+     .catch(function(err) {
+       console.log(err);
+     });
 }
 
 /**
@@ -345,53 +312,54 @@ function showPaymentUI(request, canMakePayment) {
  * @private
  * @param {PaymentResponse} instrument The payment instrument that was authed.
  */
+/**
+* Process the response from browser.
+*
+* @private
+* @param {PaymentResponse} instrument The payment instrument that was authed.
+*/
 function processResponse(instrument) {
-  var instrumentString = instrumentToJsonString(instrument);
-  console.log(instrumentString);
+ var instrumentString = instrumentToJsonString(instrument);
+ console.log(instrumentString);
 
-  fetch('/buy', {
-    method: 'POST',
-    headers: new Headers({'Content-Type': 'application/json'}),
-    body: instrumentString,
-    credentials: 'include',
-  })
-      .then(function(buyResult) {
-        if (buyResult.ok) {
-          return buyResult.json();
-        }
-        console.log('Error sending instrument to server.');
-      })
-      .then(function(buyResultJson) {
-        completePayment(
-            instrument, buyResultJson.status, buyResultJson.message);
-      })
-      .catch(function(err) {
-        console.log('Unable to process payment. ' + err);
-      });
+ fetch('/buy', {
+   method: 'POST',
+   headers: new Headers({'Content-Type': 'application/json'}),
+   body: instrumentString,
+ })
+     .then(function(buyResult) {
+       if (buyResult.ok) {
+         return buyResult.json();
+       }
+       console.log('Error sending instrument to server.');
+     })
+     .then(function(buyResultJson) {
+       completePayment(instrument, buyResultJson.status, buyResultJson.message);
+
+     })
+     .catch(function(err) {
+       console.log('Unable to process payment. ' + err);
+     });
 }
 
 /**
- * Notify browser that the instrument authorization has completed.
- *
- * @private
- * @param {PaymentResponse} instrument The payment instrument that was authed.
- * @param {string} result Whether the auth was successful. Should be either
- * 'success' or 'fail'.
- * @param {string} msg The message to log in console.
- */
+* Notify browser that the instrument authorization has completed.
+*
+* @private
+* @param {PaymentResponse} instrument The payment instrument that was authed.
+* @param {string} result Whether the auth was successful. Should be either
+* 'success' or 'fail'.
+* @param {string} msg The message to log in console.
+*/
 function completePayment(instrument, result, msg) {
-  instrument.complete(result)
-      .then(function() {
-        console.log('Payment completes.');
-        console.log(msg);
-        document.getElementById('inputSection').style.display = 'none'
-        document.getElementById('outputSection').style.display = 'block'
-        document.getElementById('response').innerHTML =
-            JSON.stringify(instrument, undefined, 2);
-      })
-      .catch(function(err) {
-        console.log(err);
-      });
+ instrument.complete(result)
+     .then(function() {
+       console.log('Payment succeeds.');
+       console.log(msg);
+     })
+     .catch(function(err) {
+       console.log(err);
+     });
 }
 
 /** Redirect to PlayStore. */
